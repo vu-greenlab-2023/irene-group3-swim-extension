@@ -1,5 +1,17 @@
-# SWIM - A Simulator of Web Infrastructure and Management
-SWIM is a self-adaptive exemplar that simulates a web application. SWIM can be used as a target system with an external adaptation manager interacting with it through its TCP-based interface or with an adaptation manager built as a simulation module.
+# Fundamentals of Fundamentals of Adaptive Software (XM_0128) - SWIM extension | IreneGroup3 
+This is a part of project group work of the course Fundamentals of Adaptive Software (XM_0128 at Vrije University Amsterdam in 2022. This repository contains the replication package of our SWIM custom extension and experiment evaluation materials.
+
+## Topic
+Extension for SWIM - A Simulator of Web Infrastructure and Management  
+
+
+## Team members
+### Name, student ID, email
+1. Dinara Garifollina, 2773138, d.garifollina@student.vu.nl
+2. Mochamad Rizal Hidayat, 2689966, mochamadrizalhidayat@student.vu.nl
+3. Rajitha Manellanga, 2770528, r.a.manellanga@student.vu.nl
+4. Rakkan Tiasakul, 2769627, r.tiasakul@student.vu.nl
+
 
 ## Installation - Install Docker
 SWIM uses Docker containers to automate deployment of the simulation into a virtual container. Docker is available for free at http://docker.com. Docker must be installed in your environment. The community edition is sufficient for running SWIM, which can be downloaded from [here](https://www.docker.com/community-edition#/download). SWIM itself is hosted on Docker Hub.
