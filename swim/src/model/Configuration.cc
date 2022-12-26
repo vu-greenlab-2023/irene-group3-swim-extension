@@ -46,14 +46,14 @@ int Configuration::getServers(MTServerType::ServerType type) const {
     int cntServers;
 
     switch (type) {
-    case MTServerType::ServerType::A:
-        cntServers = this->serversA + ((bootServerType == MTServerType::ServerType::A) ? 1 : 0);
+    case MTServerType::ServerType::POWERFUL:
+        cntServers = this->serversA + ((bootServerType == MTServerType::ServerType::POWERFUL) ? 1 : 0);
         break;
-    case MTServerType::ServerType::B:
-        cntServers = this->serversB + ((bootServerType == MTServerType::ServerType::B) ? 1 : 0);
+    case MTServerType::ServerType::AVERAGE:
+        cntServers = this->serversB + ((bootServerType == MTServerType::ServerType::AVERAGE) ? 1 : 0);
         break;
-    case MTServerType::ServerType::C:
-        cntServers = this->serversC + ((bootServerType == MTServerType::ServerType::C) ? 1 : 0);
+    case MTServerType::ServerType::WEAK:
+        cntServers = this->serversC + ((bootServerType == MTServerType::ServerType::WEAK) ? 1 : 0);
         break;
     case MTServerType::ServerType::NONE:
         cntServers = 0;
@@ -88,13 +88,13 @@ int Configuration::getActiveServers(MTServerType::ServerType serverType) const {
     int cntServer;
 
     switch (serverType) {
-    case MTServerType::ServerType::A:
+    case MTServerType::ServerType::POWERFUL:
         cntServer = this->serversA;
         break;
-    case MTServerType::ServerType::B:
+    case MTServerType::ServerType::AVERAGE:
         cntServer = this->serversB;
         break;
-    case MTServerType::ServerType::C:
+    case MTServerType::ServerType::WEAK:
         cntServer = this->serversC;
         break;
     case MTServerType::ServerType::NONE:
@@ -106,13 +106,13 @@ int Configuration::getActiveServers(MTServerType::ServerType serverType) const {
 
 void Configuration::setActiveServers(int servers, MTServerType::ServerType serverType) {
     switch (serverType) {
-    case MTServerType::ServerType::A:
+    case MTServerType::ServerType::POWERFUL:
         this->serversA = servers;
         break;
-    case MTServerType::ServerType::B:
+    case MTServerType::ServerType::AVERAGE:
         this->serversB = servers;
         break;
-    case MTServerType::ServerType::C:
+    case MTServerType::ServerType::WEAK:
         this->serversC = servers;
         break;
     case MTServerType::ServerType::NONE:
@@ -127,13 +127,13 @@ LoadBalancer::TrafficLoad Configuration::getTraffic(MTServerType::ServerType ser
     LoadBalancer::TrafficLoad traffic = LoadBalancer::TrafficLoad::INVALID;
 
     switch (serverType) {
-    case MTServerType::ServerType::A:
+    case MTServerType::ServerType::POWERFUL:
         traffic = this->trafficA;
         break;
-    case MTServerType::ServerType::B:
+    case MTServerType::ServerType::AVERAGE:
         traffic = this->trafficB;
         break;
-    case MTServerType::ServerType::C:
+    case MTServerType::ServerType::WEAK:
         traffic = this->trafficC;
         break;
     case MTServerType::ServerType::NONE:
@@ -145,13 +145,13 @@ LoadBalancer::TrafficLoad Configuration::getTraffic(MTServerType::ServerType ser
 
 void Configuration::setTraffic(MTServerType::ServerType serverType, LoadBalancer::TrafficLoad trafficLoad) {
     switch (serverType) {
-        case MTServerType::ServerType::A:
+        case MTServerType::ServerType::POWERFUL:
             this->trafficA = trafficLoad;
             break;
-        case MTServerType::ServerType::B:
+        case MTServerType::ServerType::AVERAGE:
             this->trafficB = trafficLoad;
             break;
-        case MTServerType::ServerType::C:
+        case MTServerType::ServerType::WEAK:
             this->trafficC = trafficLoad;
             break;
         case MTServerType::ServerType::NONE:

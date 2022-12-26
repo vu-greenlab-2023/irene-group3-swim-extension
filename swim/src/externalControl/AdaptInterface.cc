@@ -295,11 +295,11 @@ std::string AdaptInterface::cmdGetActiveServers(const std::vector<std::string>& 
     int maxServer = 0;
     MTServerType::ServerType serverType = MTServerType::ServerType(atoi(args[0].c_str()));
 
-    if (serverType == MTServerType::A) {
+    if (serverType == MTServerType::POWERFUL) {
         maxServer = omnetpp::getSimulation()->getSystemModule()->par("maxServersA");
-    } else if (serverType == MTServerType::B) {
+    } else if (serverType == MTServerType::AVERAGE) {
         maxServer = omnetpp::getSimulation()->getSystemModule()->par("maxServersB");
-    } else if (serverType == MTServerType::C) {
+    } else if (serverType == MTServerType::WEAK) {
         maxServer = omnetpp::getSimulation()->getSystemModule()->par("maxServersC");
     } else {
         return INVALID_ARGUMENT;
@@ -319,11 +319,11 @@ std::string AdaptInterface::cmdGetMaxServers(const std::vector<std::string>& arg
     int maxServer = 0;
     MTServerType::ServerType serverType = MTServerType::ServerType(atoi(args[0].c_str()));
 
-    if (serverType == MTServerType::A) {
+    if (serverType == MTServerType::POWERFUL) {
         maxServer = omnetpp::getSimulation()->getSystemModule()->par("maxServersA");
-    } else if (serverType == MTServerType::B) {
+    } else if (serverType == MTServerType::AVERAGE) {
         maxServer = omnetpp::getSimulation()->getSystemModule()->par("maxServersB");
-    } else if (serverType == MTServerType::C) {
+    } else if (serverType == MTServerType::WEAK) {
         maxServer = omnetpp::getSimulation()->getSystemModule()->par("maxServersC");
     } else {
         return INVALID_ARGUMENT;

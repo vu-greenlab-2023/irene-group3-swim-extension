@@ -144,13 +144,13 @@ string ExecutionManagerMod::getModuleStr(MTServerType::ServerType serverType) co
     string module_str = "";
 
     switch (serverType) {
-    case MTServerType::ServerType::A:
+    case MTServerType::ServerType::POWERFUL:
         module_str = "plasa.modules.AppServerA";
         break;
-    case MTServerType::ServerType::B:
+    case MTServerType::ServerType::AVERAGE:
         module_str = "plasa.modules.AppServerB";
         break;
-    case MTServerType::ServerType::C:
+    case MTServerType::ServerType::WEAK:
         module_str = "plasa.modules.AppServerC";
         break;
     case MTServerType::ServerType::NONE:
@@ -168,13 +168,13 @@ string ExecutionManagerMod::getServerString(MTServerType::ServerType serverType,
     }
 
     switch (serverType) {
-    case MTServerType::ServerType::A:
+    case MTServerType::ServerType::POWERFUL:
         name_str += string("_A_");
         break;
-    case MTServerType::ServerType::B:
+    case MTServerType::ServerType::AVERAGE:
         name_str += string("_B_");
         break;
-    case MTServerType::ServerType::C:
+    case MTServerType::ServerType::WEAK:
         name_str += string("_C_");
         break;
     case MTServerType::ServerType::NONE:
@@ -228,9 +228,9 @@ void ExecutionManagerMod::doSetBrownout(MTServerType::ServerType serverType, dou
 }
 
 void ExecutionManagerMod::doSetBrownout(double factor) {
-    doSetBrownout(MTServerType::ServerType::A, factor);
-    doSetBrownout(MTServerType::ServerType::B, factor);
-    doSetBrownout(MTServerType::ServerType::C, factor);
+    doSetBrownout(MTServerType::ServerType::POWERFUL, factor);
+    doSetBrownout(MTServerType::ServerType::AVERAGE, factor);
+    doSetBrownout(MTServerType::ServerType::WEAK, factor);
 }
 
 

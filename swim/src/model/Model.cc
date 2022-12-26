@@ -88,9 +88,9 @@ int Model::getActiveServerCountIn(double deltaTime, MTServerType::ServerType ser
 
 void Model::setTrafficLoad(LoadBalancer::TrafficLoad serverA,
               LoadBalancer::TrafficLoad serverB, LoadBalancer::TrafficLoad serverC) {
-    this->configuration.setTraffic(MTServerType::ServerType::A, serverA);
-    this->configuration.setTraffic(MTServerType::ServerType::B, serverB);
-    this->configuration.setTraffic(MTServerType::ServerType::C, serverC);
+    this->configuration.setTraffic(MTServerType::ServerType::POWERFUL, serverA);
+    this->configuration.setTraffic(MTServerType::ServerType::AVERAGE, serverB);
+    this->configuration.setTraffic(MTServerType::ServerType::WEAK, serverC);
 }
 
 void Model::addServer(double bootDelay, MTServerType::ServerType serverType)
@@ -140,13 +140,13 @@ Model::ModelChange Model::getOnlineEventCode(MTServerType::ServerType serverType
     ModelChange event = INVALID;
 
     switch (serverType) {
-    case MTServerType::ServerType::A:
+    case MTServerType::ServerType::POWERFUL:
         event = SERVERA_ONLINE;
         break;
-    case MTServerType::ServerType::B:
+    case MTServerType::ServerType::AVERAGE:
         event = SERVERB_ONLINE;
         break;
-    case MTServerType::ServerType::C:
+    case MTServerType::ServerType::WEAK:
         event = SERVERC_ONLINE;
         break;
     case MTServerType::ServerType::NONE:
@@ -230,17 +230,17 @@ void Model::initialize(int stage) {
         ExecutionManagerModBase* pExecMgr = check_and_cast<ExecutionManagerModBase*> (getParentModule()->getSubmodule("executionManager"));
         int initialServers = omnetpp::getSimulation()->getSystemModule()->par("initialServersA");
         while (initialServers > 0) {
-            pExecMgr->addServerLatencyOptional(MTServerType::ServerType::A, true);
+            pExecMgr->addServerLatencyOptional(MTServerType::ServerType::POWERFUL, true);
             initialServers--;
         }
         initialServers = omnetpp::getSimulation()->getSystemModule()->par( "initialServersB");
         while (initialServers > 0) {
-            pExecMgr->addServerLatencyOptional(MTServerType::ServerType::B, true);
+            pExecMgr->addServerLatencyOptional(MTServerType::ServerType::AVERAGE, true);
             initialServers--;
         }
         initialServers = omnetpp::getSimulation()->getSystemModule()->par("initialServersC");
         while (initialServers > 0) {
-            pExecMgr->addServerLatencyOptional(MTServerType::ServerType::C, true);
+            pExecMgr->addServerLatencyOptional(MTServerType::ServerType::WEAK, true);
             initialServers--;
         }
     }
@@ -271,9 +271,9 @@ bool Model::isServerBooting() const {
         /* find if a server is booting. Assume only one can be booting */
         ModelChangeEvents::const_iterator eventIt = events.begin();
         if (eventIt != events.end()) {
-            ModelChange changeEventCodeServerA = getOnlineEventCode(MTServerType::ServerType::A);
-            ModelChange changeEventCodeServerB = getOnlineEventCode(MTServerType::ServerType::B);
-            ModelChange changeEventCodeServerC = getOnlineEventCode(MTServerType::ServerType::C);
+            ModelChange changeEventCodeServerA = getOnlineEventCode(MTServerType::ServerType::POWERFUL);
+            ModelChange changeEventCodeServerB = getOnlineEventCode(MTServerType::ServerType::AVERAGE);
+            ModelChange changeEventCodeServerC = getOnlineEventCode(MTServerType::ServerType::WEAK);
             ASSERT(eventIt->change == changeEventCodeServerA || eventIt->change == changeEventCodeServerB || eventIt->change == changeEventCodeServerC);
             isBooting = true;
             eventIt++;
@@ -326,13 +326,13 @@ const Model::ServerInfo* Model::getServerInfoObj(MTServerType::ServerType server
     const ServerInfo* serverInfo = NULL;
 
     switch (serverType) {
-    case MTServerType::ServerType::A:
+    case MTServerType::ServerType::POWERFUL:
         serverInfo = &serverA;
         break;
-    case MTServerType::ServerType::B:
+    case MTServerType::ServerType::AVERAGE:
         serverInfo = &serverB;
         break;
-    case MTServerType::ServerType::C:
+    case MTServerType::ServerType::WEAK:
         serverInfo = &serverC;
         break;
     case MTServerType::ServerType::NONE:

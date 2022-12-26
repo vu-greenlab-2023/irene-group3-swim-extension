@@ -186,11 +186,11 @@ MTServerType::ServerType ExecutionManagerModBase::getServerTypeFromName(const ch
     MTServerType::ServerType serverType = MTServerType::NONE;
 
     if (strncmp(name, "server_A_", 9) == 0) {
-        serverType = MTServerType::A;
+        serverType = MTServerType::POWERFUL;
     } else if (strncmp(name, "server_B_", 9) == 0) {
-        serverType = MTServerType::B;
+        serverType = MTServerType::AVERAGE;
     } else if (strncmp(name, "server_C_", 9) == 0) {
-        serverType = MTServerType::C;
+        serverType = MTServerType::WEAK;
     } else {
         assert(false);
     }
