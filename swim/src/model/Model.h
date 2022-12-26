@@ -79,8 +79,11 @@ protected:
     double lowFidelityServiceTime;
     double lowFidelityServiceTimeVariance;
     int numberOfBrownoutLevels;
+<<<<<<< HEAD
     int weight; // add server weight
     int activeConnections; // number of active connections of a server
+=======
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
 
     void addExpectedChange(double time, ModelChange change);
 
@@ -150,6 +153,7 @@ public:
     double brownoutLevelToFactor(int brownoutLevel) const;
     int brownoutFactorToLevel(double brownoutFactor) const;
 
+<<<<<<< HEAD
     
     double getDimmerMargin() const;
 
@@ -159,6 +163,10 @@ public:
     int getActiveConnections() const;
     void setActiveConnections(int activeConnections);
 
+=======
+    double getDimmerMargin() const;
+
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
     virtual ~Model();
 };
 

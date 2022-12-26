@@ -16,6 +16,10 @@
 *--------------------------------------------------------------*/
 
 #include "SocketRTScheduler.h"
+<<<<<<< HEAD
+=======
+#include <string>
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
 
 Register_Class(cSocketRTScheduler);
 
@@ -48,7 +52,11 @@ void cSocketRTScheduler::startRun()
     if (initsocketlibonce() != 0)
         throw cRuntimeError("cSocketRTScheduler: Cannot initialize socket library");
 
+<<<<<<< HEAD
     baseTime = opp_get_monotonic_clock_usecs();
+=======
+    gettimeofday(&baseTime, nullptr);
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
 
     module = nullptr;
     notificationMsg = nullptr;
@@ -66,6 +74,7 @@ void cSocketRTScheduler::setupListener()
     if (listenerSocket == INVALID_SOCKET)
         throw cRuntimeError("cSocketRTScheduler: cannot create socket");
 
+<<<<<<< HEAD
     // Setting this option makes it possible to kill the sample and restart
     // it right away without having to change the port it is listening on.
     // Not using SO_REUSEADDR as per: https://stackoverflow.com/a/34812994
@@ -74,12 +83,20 @@ void cSocketRTScheduler::setupListener()
     if (setsockopt(listenerSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&enable, sizeof(int)) < 0)
         throw cRuntimeError("cSocketRTScheduler: cannot set socket option");
 
+=======
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
     sockaddr_in sinInterface;
     sinInterface.sin_family = AF_INET;
     sinInterface.sin_addr.s_addr = INADDR_ANY;
     sinInterface.sin_port = htons(port);
     if (bind(listenerSocket, (sockaddr *)&sinInterface, sizeof(sockaddr_in)) == SOCKET_ERROR)
+<<<<<<< HEAD
         throw cRuntimeError("cSocketRTScheduler: socket bind() failed");
+=======
+        throw cRuntimeError(
+                (std::string("cSocketRTScheduler: socket bind() failed: ")
+                        + strerror(errno)).c_str());
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
 
     listen(listenerSocket, SOMAXCONN);
 }
@@ -90,8 +107,13 @@ void cSocketRTScheduler::endRun()
 
 void cSocketRTScheduler::executionResumed()
 {
+<<<<<<< HEAD
     baseTime = opp_get_monotonic_clock_usecs();
     baseTime = baseTime - simTime().inUnit(SIMTIME_US);
+=======
+    gettimeofday(&baseTime, nullptr);
+    baseTime = timeval_substract(baseTime, SIMTIME_DBL(simTime()));
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
 }
 
 void cSocketRTScheduler::setInterfaceModule(cModule *mod, cMessage *notifMsg, char *buf, int bufSize, int *nBytesPtr)
@@ -153,10 +175,19 @@ bool cSocketRTScheduler::receiveWithTimeout(long usec)
                 EV << "cSocketRTScheduler: received " << nBytes << " bytes\n";
                 (*numBytesPtr) += nBytes;
 
+<<<<<<< HEAD
                 int64_t currentTime = opp_get_monotonic_clock_usecs();
                 simtime_t eventTime(currentTime - baseTime, SIMTIME_US);
                 ASSERT(eventTime >= simTime());
                 notificationMsg->setArrival(module->getId(), -1, eventTime);
+=======
+                timeval curTime;
+                gettimeofday(&curTime, nullptr);
+                curTime = timeval_substract(curTime, baseTime);
+                simtime_t t = curTime.tv_sec + curTime.tv_usec*1e-6;
+                // TBD assert that it's somehow not smaller than previous event's time
+                notificationMsg->setArrival(module->getId(), -1, t);
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
                 getSimulation()->getFES()->insert(notificationMsg);
                 return true;
             }
@@ -174,6 +205,7 @@ bool cSocketRTScheduler::receiveWithTimeout(long usec)
     return false;
 }
 
+<<<<<<< HEAD
 int cSocketRTScheduler::receiveUntil(int64_t targetTime)
 {
     // if there's more than 200ms to wait, wait in 100ms chunks
@@ -198,6 +230,28 @@ int cSocketRTScheduler::receiveUntil(int64_t targetTime)
     long remaining = targetTime - currentTime;
     if (remaining > 0)
         if (receiveWithTimeout(remaining))
+=======
+int cSocketRTScheduler::receiveUntil(const timeval& targetTime)
+{
+    // if there's more than 200ms to wait, wait in 100ms chunks
+    // in order to keep UI responsiveness by invoking getEnvir()->idle()
+    timeval curTime;
+    gettimeofday(&curTime, nullptr);
+    while (targetTime.tv_sec-curTime.tv_sec >= 2 ||
+           timeval_diff_usec(targetTime, curTime) >= 200000)
+    {
+        if (receiveWithTimeout(100000))  // 100ms
+            return 1;
+        if (getEnvir()->idle())
+            return -1;
+        gettimeofday(&curTime, nullptr);
+    }
+
+    // difference is now at most 100ms, do it at once
+    long usec = timeval_diff_usec(targetTime, curTime);
+    if (usec > 0)
+        if (receiveWithTimeout(usec))
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
             return 1;
 
     return 0;
@@ -215,24 +269,43 @@ cEvent *cSocketRTScheduler::takeNextEvent()
         throw cRuntimeError("cSocketRTScheduler: setInterfaceModule() not called: it must be called from a module's initialize() function");
 
     // calculate target time
+<<<<<<< HEAD
     int64_t targetTime;
+=======
+    timeval targetTime;
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
     cEvent *event = sim->getFES()->peekFirst();
     if (!event) {
         // if there are no events, wait until something comes from outside
         // TBD: obey simtimelimit, cpu-time-limit
+<<<<<<< HEAD
         // This way targetTime will always be "as far in the future as possible", considering
         // how integer overflows work in conjunction with comparisons in C++ (in practice...)
         targetTime = opp_get_monotonic_clock_usecs() + INT64_MAX;
+=======
+        targetTime.tv_sec = LONG_MAX;
+        targetTime.tv_usec = 0;
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
     }
     else {
         // use time of next event
         simtime_t eventSimtime = event->getArrivalTime();
+<<<<<<< HEAD
         targetTime = baseTime + eventSimtime.inUnit(SIMTIME_US);
     }
 
     // if needed, wait until that time arrives
     int64_t currentTime = opp_get_monotonic_clock_usecs();
     if (targetTime > currentTime) {
+=======
+        targetTime = timeval_add(baseTime, SIMTIME_DBL(eventSimtime));
+    }
+
+    // if needed, wait until that time arrives
+    timeval curTime;
+    gettimeofday(&curTime, nullptr);
+    if (timeval_greater(targetTime, curTime)) {
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
         int status = receiveUntil(targetTime);
         if (status == -1)
             return nullptr;  // interrupted by user

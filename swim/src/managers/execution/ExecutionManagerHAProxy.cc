@@ -52,10 +52,13 @@ BootComplete* ExecutionManagerHAProxy::doAddServer(bool instantaneous) {
         for (int i = 1; i <= pModel->getMaxServers(); i++) {
             disableServer(i);
         }
+<<<<<<< HEAD
 	//int weight = getParentModule()->par("weight");
 	//pModel->setServerWeight(weight);
 	//int activeConnections = getParentModule()->par("activeConnections");
 	//pModel->setActiveConnections(activeConnections);
+=======
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
     }
 
 

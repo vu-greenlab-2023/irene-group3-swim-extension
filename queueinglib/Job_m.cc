@@ -1,5 +1,9 @@
 //
+<<<<<<< HEAD
 // Generated file, do not edit! Created by nedtool 5.4 from Job.msg.
+=======
+// Generated file, do not edit! Created by nedtool 5.2 from Job.msg.
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:
