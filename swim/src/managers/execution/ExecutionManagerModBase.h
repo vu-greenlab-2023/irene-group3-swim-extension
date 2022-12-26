@@ -20,6 +20,8 @@
 #include "BootComplete_m.h"
 #include <model/Model.h>
 #include "ExecutionManager.h"
+#include "AllTactics.h"
+#include "assert.h"
 
 class ExecutionManagerModBase : public omnetpp::cSimpleModule, public ExecutionManager {
     int serverRemoveInProgress;
@@ -47,7 +49,9 @@ class ExecutionManagerModBase : public omnetpp::cSimpleModule, public ExecutionM
      * so that the server is removed from the model
      * TODO there should be a state in the model to mark servers being shutdown
      */
-    void notifyRemoveServerCompleted(const char* serverId);
+    void notifyRemoveServerCompleted(MTServerType::ServerType serverType);
+
+    double getMeanAndVarianceFromParameter(const cPar& par, double& variance) const;
 
 
     // target-specific methods (e.g., actual servers, sim servers, etc.)
@@ -55,14 +59,15 @@ class ExecutionManagerModBase : public omnetpp::cSimpleModule, public ExecutionM
     /**
      * @return BootComplete* to be handled later by doAddServerBootComplete()
      */
-    virtual BootComplete* doAddServer(bool instantaneous = false) = 0;
+    virtual BootComplete* doAddServer(MTServerType::ServerType serverType, bool instantaneous = false) = 0;
     virtual void doAddServerBootComplete(BootComplete* bootComplete) = 0;
+    virtual MTServerType::ServerType getServerTypeFromName(const char* name) const;
 
     /**
      * @return BootComplete* identical in content (not the pointer itself) to
      *   what doAddServer() would have returned for this server
      */
-    virtual BootComplete* doRemoveServer() = 0;
+    virtual BootComplete* doRemoveServer(MTServerType::ServerType serverType) = 0;
     virtual void doSetBrownout(double factor) = 0;
 
   public:
@@ -73,12 +78,16 @@ class ExecutionManagerModBase : public omnetpp::cSimpleModule, public ExecutionM
 
     ExecutionManagerModBase();
     virtual ~ExecutionManagerModBase();
-    virtual void addServerLatencyOptional(bool instantaneous = false);
+    virtual void addServerLatencyOptional(MTServerType::ServerType serverType, bool instantaneous = false);
+
+    virtual void addServer() {assert(false);} 
+    virtual void removeServer() {assert(false);} 
 
     // ExecutionManager interface
-    virtual void addServer();
-    virtual void removeServer();
+    virtual void addServer(MTServerType::ServerType serverType);
+    virtual void removeServer(MTServerType::ServerType serverType);
     virtual void setBrownout(double factor);
+    virtual void divertTraffic(LoadBalancer::TrafficLoad serverA, LoadBalancer::TrafficLoad serverB, LoadBalancer::TrafficLoad serverC);
 };
 
 #endif /* EXECUTIONMANAGERMODBASE_H_ */

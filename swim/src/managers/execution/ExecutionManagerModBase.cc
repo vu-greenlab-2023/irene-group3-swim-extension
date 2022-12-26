@@ -15,7 +15,7 @@
 #include "ExecutionManagerModBase.h"
 #include <sstream>
 #include <cstdlib>
-
+#include <boost/tokenizer.hpp>
 
 using namespace std;
 using namespace omnetpp;
@@ -56,7 +56,9 @@ void ExecutionManagerModBase::handleMessage(cMessage* msg) {
     doAddServerBootComplete(bootComplete);
 
     //  notify add complete to model
-    pModel->serverBecameActive();
+    cModule *server = omnetpp::getSimulation()->getModule(bootComplete->getModuleId());
+    MTServerType::ServerType serverType = getServerTypeFromName(server->getFullName());
+    pModel->serverBecameActive(serverType);
     emit(serverActivatedSignal, true);
 
     cout << "t=" << simTime() << " addServer() complete" << endl;
@@ -75,17 +77,17 @@ ExecutionManagerModBase::~ExecutionManagerModBase() {
     cancelAndDelete(testMsg);
 }
 
-void ExecutionManagerModBase::addServer() {
+void ExecutionManagerModBase::addServer(MTServerType::ServerType serverType) {
     cout << "t=" << simTime() << " executing addServer()" << endl;
-    addServerLatencyOptional();
+    addServerLatencyOptional(serverType);
 }
 
-void ExecutionManagerModBase::addServerLatencyOptional(bool instantaneous) {
+void ExecutionManagerModBase::addServerLatencyOptional(MTServerType::ServerType serverType, bool instantaneous) {
     Enter_Method("addServer()");
-    int serverCount = pModel->getServers();
-    ASSERT(serverCount < pModel->getMaxServers());
+    int serverCount = pModel->getConfiguration().getServers(serverType);
+    ASSERT(serverCount < pModel->getConfiguration().getMaxServers(serverType));
 
-    BootComplete* bootComplete = doAddServer(instantaneous);
+    BootComplete* bootComplete = doAddServer(serverType, instantaneous);
 
     double bootDelay = 0;
     if (!instantaneous) {
@@ -93,8 +95,9 @@ void ExecutionManagerModBase::addServerLatencyOptional(bool instantaneous) {
         cout << "adding server with latency=" << bootDelay << endl;
     }
 
-    pModel->addServer(bootDelay);
-    emit(serverAddedSignal, true);
+    pModel->addServer(bootDelay, serverType);
+    //TODO: try to put true
+    emit(serverAddedSignal, serverType);
 
     pendingMessages.insert(bootComplete);
     if (bootDelay == 0) {
@@ -104,16 +107,16 @@ void ExecutionManagerModBase::addServerLatencyOptional(bool instantaneous) {
     }
 }
 
-void ExecutionManagerModBase::removeServer() {
+void ExecutionManagerModBase::removeServer(MTServerType::ServerType serverType) {
     Enter_Method("removeServer()");
     cout << "t=" << simTime() << " executing removeServer()" << endl;
-    int serverCount = pModel->getServers();
-    ASSERT(serverCount > 1);
+    int serverCount = pModel->getConfiguration().getServers(serverType);
+    ASSERT(pModel->getConfiguration().getTotalActiveServers() > 1);
 
     ASSERT(serverRemoveInProgress == 0); // removing a server while another is being removed not supported yet
 
     serverRemoveInProgress++;
-    BootComplete* pBootComplete = doRemoveServer();
+    BootComplete* pBootComplete = doRemoveServer(serverType);
 
     // cancel boot complete event if needed
     for (BootCompletes::iterator it = pendingMessages.begin(); it != pendingMessages.end(); ++it) {
@@ -134,11 +137,63 @@ void ExecutionManagerModBase::setBrownout(double factor) {
     emit(brownoutSetSignal, true);
 }
 
-void ExecutionManagerModBase::notifyRemoveServerCompleted(const char* serverId) {
+void ExecutionManagerModBase::notifyRemoveServerCompleted(MTServerType::ServerType serverType) {
 
-    pModel->removeServer();
+    pModel->removeServer(serverType);
     serverRemoveInProgress--;
 
     // emit signal to notify others (notably iProbe)
-    emit(serverRemovedSignal, serverId);
+    emit(serverRemovedSignal, serverType);
+}
+
+void ExecutionManagerModBase::divertTraffic(LoadBalancer::TrafficLoad serverA,
+        LoadBalancer::TrafficLoad serverB, LoadBalancer::TrafficLoad serverC) {
+    Enter_Method("divertTraffic()");
+    pModel->setTrafficLoad(serverA, serverB, serverC);
+}
+
+double ExecutionManagerModBase::getMeanAndVarianceFromParameter(const cPar& par, double& variance) const {
+    if (par.isExpression()) {
+        typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
+        //std::cout << par.getExpression()->str() << std::endl;
+        std::string serviceTimeDistribution = par.getExpression()->str();
+        tokenizer tokens(serviceTimeDistribution, boost::char_separator<char>("(,)"));
+        tokenizer::iterator it = tokens.begin();
+
+        ASSERT(it != tokens.end());
+
+        if (*it == "exponential") {
+            ASSERT(++it != tokens.end());
+            double mean = atof((*it).c_str());
+            variance = pow(mean, 2);
+            return mean;
+        } else if (*it == "normal" || *it == "truncnormal") {
+            ASSERT(++it != tokens.end());
+            double mean = atof((*it).c_str());
+            ASSERT(++it != tokens.end());
+            variance = pow(atof((*it).c_str()), 2);
+            return mean;
+        }
+        ASSERT(false); 
+    } else {
+        variance = 0;
+        return par.doubleValue();
+    }
+    return 0;
+}
+
+MTServerType::ServerType ExecutionManagerModBase::getServerTypeFromName(const char* name) const {
+    MTServerType::ServerType serverType = MTServerType::NONE;
+
+    if (strncmp(name, "server_A_", 9) == 0) {
+        serverType = MTServerType::A;
+    } else if (strncmp(name, "server_B_", 9) == 0) {
+        serverType = MTServerType::B;
+    } else if (strncmp(name, "server_C_", 9) == 0) {
+        serverType = MTServerType::C;
+    } else {
+        assert(false);
+    }
+
+    return serverType;
 }

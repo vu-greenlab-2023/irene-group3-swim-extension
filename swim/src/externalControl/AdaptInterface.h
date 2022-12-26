@@ -19,6 +19,7 @@
 #include <omnetpp.h>
 #include <string>
 #include <vector>
+#include <stack>
 #include <functional>
 #include <map>
 #include "model/Model.h"
@@ -44,6 +45,11 @@ protected:
     virtual std::string cmdAddServer(const std::vector<std::string>& args);
     virtual std::string cmdRemoveServer(const std::vector<std::string>& args);
     virtual std::string cmdSetDimmer(const std::vector<std::string>& args);
+    virtual std::string cmdIncreaseDimmer(const std::vector<std::string>& args);
+    virtual std::string cmdDecreaseDimmer(const std::vector<std::string>& args);
+    virtual std::string cmdDivertTraffic(const std::vector<std::string>& args);
+    virtual std::string cmdGetAvgResponseTime(const std::vector<std::string>& args);
+    virtual std::string cmdGetTraffic(const std::vector<std::string>& args);
 
     virtual std::string cmdGetDimmer(const std::vector<std::string>& args);
     virtual std::string cmdGetServers(const std::vector<std::string>& args);
@@ -63,6 +69,7 @@ private:
 
     char recvBuffer[BUFFER_SIZE];
     int numRecvBytes;
+    virtual std::string setDimmer(int level);
 };
 
 #endif

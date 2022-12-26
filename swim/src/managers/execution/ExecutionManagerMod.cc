@@ -47,7 +47,8 @@ void ExecutionManagerMod::initialize() {
 void ExecutionManagerMod::handleMessage(cMessage *msg) {
     if (msg == completeRemoveMsg) {
         cModule* module = getSimulation()->getModule(serverBeingRemovedModuleId);
-        notifyRemoveServerCompleted(module->getName());
+        MTServerType::ServerType serverType = getServerTypeFromName(module->getFullName());
+        notifyRemoveServerCompleted(serverType);
         module->gate("out")->disconnect();
         module->deleteModule();
         serverBeingRemovedModuleId = -1;
@@ -77,13 +78,13 @@ ExecutionManagerMod::~ExecutionManagerMod() {
 }
 
 
-BootComplete* ExecutionManagerMod::doAddServer(bool instantaneous) {
+BootComplete* ExecutionManagerMod::doAddServer(MTServerType::ServerType serverType, bool instantaneous) {
     // find factory object
-    cModuleType *moduleType = cModuleType::get("plasa.modules.AppServer");
+    cModuleType *moduleType = cModuleType::get(getModuleStr(serverType).c_str());
 
-    int serverCount = pModel->getServers();
+    int serverCount = pModel->getConfiguration().getServers(serverType);
     stringstream name;
-    name << SERVER_MODULE_NAME;
+    name << getServerString(serverType);
     name << serverCount + 1;
     cModule *module = moduleType->create(name.str().c_str(), getParentModule());
 
@@ -108,9 +109,9 @@ BootComplete* ExecutionManagerMod::doAddServer(bool instantaneous) {
         pModel->setServerThreads(pNewSubmodule->par("threads"));
         double variance = 0.0;
         double mean = Utils::getMeanAndVarianceFromParameter(pNewSubmodule->par("serviceTime"), &variance);
-        pModel->setServiceTime(mean, variance);
+        pModel->setServiceTime(mean, variance, serverType);
         mean = Utils::getMeanAndVarianceFromParameter(pNewSubmodule->par("lowFidelityServiceTime"), &variance);
-        pModel->setLowFidelityServiceTime(mean, variance);
+        pModel->setLowFidelityServiceTime(mean, variance, serverType);
         pModel->setBrownoutFactor(pNewSubmodule->par("brownoutFactor"));
     }
 
@@ -123,10 +124,54 @@ BootComplete* ExecutionManagerMod::doAddServer(bool instantaneous) {
     return bootComplete;
 }
 
-BootComplete*  ExecutionManagerMod::doRemoveServer() {
-    int serverCount = pModel->getServers();
+string ExecutionManagerMod::getModuleStr(MTServerType::ServerType serverType) const {
+    string module_str = "";
+
+    switch (serverType) {
+    case MTServerType::ServerType::A:
+        module_str = "plasa.modules.AppServerA";
+        break;
+    case MTServerType::ServerType::B:
+        module_str = "plasa.modules.AppServerB";
+        break;
+    case MTServerType::ServerType::C:
+        module_str = "plasa.modules.AppServerC";
+        break;
+    case MTServerType::ServerType::NONE:
+        module_str = "";
+    }
+
+    return module_str;
+}
+
+string ExecutionManagerMod::getServerString(MTServerType::ServerType serverType, bool internal) const {
+    string name_str = SERVER_MODULE_NAME;
+
+    if (internal) {
+        name_str = INTERNAL_SERVER_MODULE_NAME;
+    }
+
+    switch (serverType) {
+    case MTServerType::ServerType::A:
+        name_str += string("_A_");
+        break;
+    case MTServerType::ServerType::B:
+        name_str += string("_B_");
+        break;
+    case MTServerType::ServerType::C:
+        name_str += string("_C_");
+        break;
+    case MTServerType::ServerType::NONE:
+        name_str = "";
+    }
+
+    return name_str;
+}
+
+BootComplete*  ExecutionManagerMod::doRemoveServer(MTServerType::ServerType serverType) {
+    int serverCount = pModel->getConfiguration().getServers(serverType);
     stringstream name;
-    name << SERVER_MODULE_NAME;
+    name << getServerString(serverType);
     name << serverCount;
     cModule *module = getParentModule()->getSubmodule(name.str().c_str());
 
@@ -154,16 +199,22 @@ BootComplete*  ExecutionManagerMod::doRemoveServer() {
     return bootComplete;
 }
 
-void ExecutionManagerMod::doSetBrownout(double factor) {
-    int serverCount = pModel->getServers();
+void ExecutionManagerMod::doSetBrownout(MTServerType::ServerType serverType, double factor) {
+    int serverCount = pModel->getConfiguration().getServers(serverType);
     for (int s = 1; s <= serverCount; s++) {
         stringstream name;
-        name << SERVER_MODULE_NAME;
+        name << getServerString(serverType);
         name << s;
 
         cModule* module = getParentModule()->getSubmodule(name.str().c_str());
         module->getSubmodule("server")->par("brownoutFactor").setDoubleValue(factor);
     }
+}
+
+void ExecutionManagerMod::doSetBrownout(double factor) {
+    doSetBrownout(MTServerType::ServerType::A, factor);
+    doSetBrownout(MTServerType::ServerType::B, factor);
+    doSetBrownout(MTServerType::ServerType::C, factor);
 }
 
 

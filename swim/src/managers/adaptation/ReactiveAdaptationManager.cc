@@ -36,20 +36,19 @@ Tactic* ReactiveAdaptationManager::evaluate() {
     Model* pModel = getModel();
     const double dimmerStep = 1.0 / (pModel->getNumberOfDimmerLevels() - 1);
     double dimmer = pModel->getDimmerFactor();
-    double spareUtilization =  pModel->getConfiguration().getActiveServers() - pModel->getObservations().utilization;
-    bool isServerBooting = pModel->getServers() > pModel->getActiveServers();
+    double spareUtilization =  pModel->getConfiguration().getActiveServers(pModel->getConfiguration().getBootType()) - pModel->getObservations().utilization;
+    bool isServerBooting = pModel->getServers() - pModel->getActiveServers();
     double responseTime = pModel->getObservations().avgResponseTime;
 
     if (responseTime > RT_THRESHOLD) {
         if (!isServerBooting
-                && pModel->getServers() < pModel->getMaxServers()) {
+                && pModel->getServers() < pModel->getMaxServers(pModel->getConfiguration().getBootType())) {
             pMacroTactic->addTactic(new AddServerTactic);
         } else if (dimmer > 0.0) {
             dimmer = max(0.0, dimmer - dimmerStep);
             pMacroTactic->addTactic(new SetDimmerTactic(dimmer));
         }
     } else if (responseTime < RT_THRESHOLD) { // can we increase dimmer or remove servers?
-
         // only if there is more than one server of spare capacity
         if (spareUtilization > 1) {
             if (dimmer < 1.0) {

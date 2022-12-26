@@ -67,7 +67,8 @@ simtime_t MTBrownoutServer::generateJobServiceTime(queueing::Job* pJob)  {
     } else {
         pJob->setKind(1); // mark the job as low fidelity
         simtime_t serviceTime = par("lowFidelityServiceTime");
-        if (serviceTime <= 0.0) {
+       
+	if (serviceTime <= 0.0) {
             serviceTime = 0.000001; // make it a very short job
         }
         st = serviceTime;
@@ -78,7 +79,7 @@ simtime_t MTBrownoutServer::generateJobServiceTime(queueing::Job* pJob)  {
 
     if (cacheLow || pJob->getKind() != 1) {
         double delta = (pJob->getKind() == 1) ? cacheDeltaLow : cacheDelta;
-        double lambda = (-1.0 / cacheRequestCount) * (log(cachePrecision * delta) - log(delta));
+        double lambda = (-1 / cacheRequestCount) * (log(cachePrecision * delta) - log(delta));
 
         /* note that this assumes that this module is inside an AppServer module with a unique name */
         long myRequestCount = requestCount[this->getParentModule()->getName()];

@@ -12,16 +12,16 @@
  * Released under a BSD license, please see license.txt for full terms.
  * DM-0003883
  *******************************************************************************/
-#ifndef __PLASASIM_EXECUTIONMANAGERHAPROXY_H_
+/*#ifndef __PLASASIM_EXECUTIONMANAGERHAPROXY_H_
 #define __PLASASIM_EXECUTIONMANAGERHAPROXY_H_
 
 #include "ExecutionManagerModBase.h"
 #include "util/HAProxySocketCommand.h"
-
-/**
+*/
+/*
  * Execution Manager to control HAProxy
  */
-class ExecutionManagerHAProxy : public ExecutionManagerModBase
+/*class ExecutionManagerHAProxy : public ExecutionManagerModBase
 {
     HAProxySocketCommand loadBalancer;
   protected:
@@ -31,19 +31,20 @@ class ExecutionManagerHAProxy : public ExecutionManagerModBase
     void disableServer(int serverNumber);
 
     // target-specific methods (e.g., actual servers, sim servers, etc.)
-
+*/
     /**
      * @return BootComplete* to be handled later by doAddServerBootComplete()
      */
-    virtual BootComplete* doAddServer(bool instantaneous = false);
+/*    virtual BootComplete* doAddServer(bool instantaneous = false);
     virtual void doAddServerBootComplete(BootComplete* bootComplete);
-
+*/
     /**
      * @return BootComplete* identical in content (not the pointer itself) to
      *   what doAddServer() would have return for this server
      */
-    virtual BootComplete* doRemoveServer();
+/*    virtual BootComplete* doRemoveServer();
     virtual void doSetBrownout(double factor);
 };
 
 #endif
+*/

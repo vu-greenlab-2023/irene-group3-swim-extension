@@ -20,7 +20,7 @@
 using namespace std;
 using namespace omnetpp;
 
-Define_Module(ExecutionManagerHAProxy);
+/*Define_Module(ExecutionManagerHAProxy);
 
 void ExecutionManagerHAProxy::initialize()
 {
@@ -33,7 +33,7 @@ void ExecutionManagerHAProxy::initialize()
 BootComplete* ExecutionManagerHAProxy::doAddServer(bool instantaneous) {
     int serverCount = pModel->getServers();
     if (serverCount == 0) {
-
+*/
         /*
          * if there should be no servers (possibly start of sim) initialize several things:
          *  -set server params in model
@@ -41,7 +41,7 @@ BootComplete* ExecutionManagerHAProxy::doAddServer(bool instantaneous) {
          *  -make sure all servers are disabled
          *  (all this should probably be in initialize in a second phase
          */
-        double variance = 0.0;
+/*        double variance = 0.0;
         double mean = Utils::getMeanAndVarianceFromParameter(getParentModule()->par("serviceTime"), &variance);
         pModel->setServiceTime(mean, variance);
         mean = Utils::getMeanAndVarianceFromParameter(getParentModule()->par("lowFidelityServiceTime"), &variance);
@@ -103,4 +103,4 @@ void ExecutionManagerHAProxy::doSetBrownout(double factor) {
     cmd << 1 - factor; // translated to dimmer
     cmd << '\n';
     loadBalancer.executeCommand(cmd.str());
-}
+}*/

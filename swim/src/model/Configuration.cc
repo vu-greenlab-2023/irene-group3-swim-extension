@@ -14,27 +14,66 @@
  *******************************************************************************/
 #include "Configuration.h"
 #include <typeinfo>
-
+#include <modules/LoadBalancer.h>
+#include <modules/MTServerType.h>
 //    int brownoutLevel = 1 + (pModel->getNumberOfBrownoutLevels() - 1) * pModel->getConfiguration().getBrownOutFactor();
 
 
-Configuration::Configuration() : servers(0), bootRemain(0), brownoutLevel(0), coldCache(false) {}
+Configuration::Configuration() : 
+        serversA(0), serversB(0), serversC(0),
+        bootRemain(0), 
+        bootServerType(MTServerType::NONE), 
+        brownoutLevel(0),
+        trafficA(LoadBalancer::TrafficLoad::HUNDRED),
+        trafficB(LoadBalancer::TrafficLoad::ZERO), 
+        trafficC(LoadBalancer::TrafficLoad::ZERO) {}
 
-Configuration::Configuration(int servers, int bootRemain, int brownoutLevel, bool coldCache)
-    :  servers(servers),  bootRemain(bootRemain),  brownoutLevel(brownoutLevel),
-        coldCache(coldCache) {};
+Configuration::Configuration(int serverA, int serverB, int serverC,
+        int bootRemain, MTServerType::ServerType serverType,
+        int brownoutLevel, LoadBalancer::TrafficLoad trafficA, 
+        LoadBalancer::TrafficLoad trafficB, LoadBalancer::TrafficLoad trafficC) :
+        serversA(serverA), serversB(serverB), serversC(serverC),
+                bootRemain(bootRemain), bootServerType(serverType),
+                brownoutLevel(brownoutLevel), trafficA(trafficA),
+                trafficB(trafficB), trafficC(trafficC) {};
 
 
 int Configuration::getBootRemain() const {
     return bootRemain;
 }
 
-int Configuration::getServers() const {
-    return servers + ((bootRemain > 0) ? 1 : 0);
+int Configuration::getServers(MTServerType::ServerType type) const {
+    int cntServers;
+
+    switch (type) {
+    case MTServerType::ServerType::A:
+        cntServers = this->serversA + ((bootServerType == MTServerType::ServerType::A) ? 1 : 0);
+        break;
+    case MTServerType::ServerType::B:
+        cntServers = this->serversB + ((bootServerType == MTServerType::ServerType::B) ? 1 : 0);
+        break;
+    case MTServerType::ServerType::C:
+        cntServers = this->serversC + ((bootServerType == MTServerType::ServerType::C) ? 1 : 0);
+        break;
+    case MTServerType::ServerType::NONE:
+        cntServers = 0;
+    }
+
+    return cntServers;
 }
 
-void Configuration::setBootRemain(int bootRemain) {
+MTServerType::ServerType Configuration::getBootType() const {
+    return bootServerType;
+}
+
+void Configuration::setBootRemain(int bootRemain, MTServerType::ServerType serverType) {
     this->bootRemain = bootRemain;
+
+    if (this->bootRemain == 0) {
+        this->bootServerType = MTServerType::ServerType::NONE;
+    } else if (serverType != MTServerType::ServerType::NONE) {
+        this->bootServerType = serverType;
+    }
 }
 
 int Configuration::getBrownOutLevel() const {
@@ -45,35 +84,81 @@ void Configuration::setBrownOutLevel(int brownoutLevel) {
     this->brownoutLevel = brownoutLevel;
 }
 
-int Configuration::getActiveServers() const {
-    return servers;
-}
+int Configuration::getActiveServers(MTServerType::ServerType serverType) const {
+    int cntServer;
 
-void Configuration::setActiveServers(int servers) {
-    this->servers = servers;
-    this->bootRemain = 0;
-}
-
-bool Configuration::isColdCache() const {
-    return coldCache;
-}
-
-void Configuration::setColdCache(bool coldCache) {
-    this->coldCache = coldCache;
-}
-
-bool Configuration::equals(const pladapt::Configuration& other) const {
-    try {
-        const Configuration& otherConf = dynamic_cast<const Configuration&>(other);
-        return servers == otherConf.servers && brownoutLevel == otherConf.brownoutLevel
-                && bootRemain == otherConf.bootRemain && coldCache == otherConf.coldCache;
+    switch (serverType) {
+    case MTServerType::ServerType::A:
+        cntServer = this->serversA;
+        break;
+    case MTServerType::ServerType::B:
+        cntServer = this->serversB;
+        break;
+    case MTServerType::ServerType::C:
+        cntServer = this->serversC;
+        break;
+    case MTServerType::ServerType::NONE:
+        cntServer = 0;
     }
-    catch(std::bad_cast&) {}
-    return false;
+
+    return cntServer;
 }
 
-void Configuration::printOn(std::ostream& os) const {
-    os << "config[servers=" << servers << ", bootRemain=" << bootRemain
-            << ", brownoutLevel=" << brownoutLevel << ", coldCache=" << coldCache << "]";
+void Configuration::setActiveServers(int servers, MTServerType::ServerType serverType) {
+    switch (serverType) {
+    case MTServerType::ServerType::A:
+        this->serversA = servers;
+        break;
+    case MTServerType::ServerType::B:
+        this->serversB = servers;
+        break;
+    case MTServerType::ServerType::C:
+        this->serversC = servers;
+        break;
+    case MTServerType::ServerType::NONE:
+        assert(false);
+    }
+
+    this->bootRemain = 0;
+    this->bootServerType = MTServerType::ServerType::NONE;
 }
 
+LoadBalancer::TrafficLoad Configuration::getTraffic(MTServerType::ServerType serverType) const {
+    LoadBalancer::TrafficLoad traffic = LoadBalancer::TrafficLoad::INVALID;
+
+    switch (serverType) {
+    case MTServerType::ServerType::A:
+        traffic = this->trafficA;
+        break;
+    case MTServerType::ServerType::B:
+        traffic = this->trafficB;
+        break;
+    case MTServerType::ServerType::C:
+        traffic = this->trafficC;
+        break;
+    case MTServerType::ServerType::NONE:
+        assert(false);
+    }
+
+    return traffic;
+}
+
+void Configuration::setTraffic(MTServerType::ServerType serverType, LoadBalancer::TrafficLoad trafficLoad) {
+    switch (serverType) {
+        case MTServerType::ServerType::A:
+            this->trafficA = trafficLoad;
+            break;
+        case MTServerType::ServerType::B:
+            this->trafficB = trafficLoad;
+            break;
+        case MTServerType::ServerType::C:
+            this->trafficC = trafficLoad;
+            break;
+        case MTServerType::ServerType::NONE:
+            assert(false);
+        }
+}
+
+int Configuration::getTotalActiveServers() const {
+    return this->serversA + this->serversB + this->serversC;
+}

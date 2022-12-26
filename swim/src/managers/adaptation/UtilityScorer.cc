@@ -28,7 +28,7 @@ double UtilityScorer::getAccruedUtility(const Model& model, const Configuration&
 {
     double brownoutRevenue = 1;
     double normalRevenue = 1.5;
-    double maxThroughput = model.getMaxServers() * MAX_SERVICE_RATE;
+    double maxThroughput = model.getMaxServers(configuration.getBootType()) * MAX_SERVICE_RATE;
 
     const auto& sysmodule = omnetpp::getSimulation()->getSystemModule();
     if (sysmodule->hasPar(OPT_REVENUE)) {

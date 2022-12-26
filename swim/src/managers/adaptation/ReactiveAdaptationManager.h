@@ -23,6 +23,9 @@
  */
 class ReactiveAdaptationManager : public BaseAdaptationManager
 {
+  public:
+	enum ServerType {NONE, A, B, C};
+	enum TrafficLoad {INVALID, ZERO, TWENTYFIVE, FIFTY, SEVENTYFIVE, HUNDRED};
   protected:
     virtual Tactic* evaluate();
 };

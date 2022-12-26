@@ -16,16 +16,29 @@
 #define CONFIGURATION_H_
 
 #include <pladapt/Configuration.h>
+#include <modules/MTServerType.h>
+#include <modules/LoadBalancer.h>
 #include <ostream>
 
 class Configuration : public pladapt::Configuration {
-    int servers; // number of active servers (there is one more powered up if bootRemain > 0
+    int serversA; // number of active servers (there is one more powered up if bootRemain > 0
+    int serversB;
+    int serversC;
     int bootRemain; // how many periods until we have one more server. If 0, no server is booting
+    // true if the cache of the last added server is cold
+    MTServerType::ServerType bootServerType;
     int brownoutLevel;
-    bool coldCache; // true if the cache of the last added server is cold
+
+    LoadBalancer::TrafficLoad trafficA;
+    LoadBalancer::TrafficLoad trafficB;
+    LoadBalancer::TrafficLoad trafficC;
 public:
     Configuration();
-    Configuration(int servers, int bootRemain, int brownoutLevel, bool coldCache);
+    Configuration(int serverA, int serverB, int serverC, int bootRemain, MTServerType::ServerType serverType, 
+    int brownoutLevel, 
+    LoadBalancer::TrafficLoad trafficA = LoadBalancer::TrafficLoad::HUNDRED,
+    LoadBalancer::TrafficLoad trafficB = LoadBalancer::TrafficLoad::ZERO,
+    LoadBalancer::TrafficLoad trafficC = LoadBalancer::TrafficLoad::ZERO);
 
 //    virtual bool operator==(const Configuration& other) const;
 //    virtual void printOn(std::ostream& os) const;
@@ -34,20 +47,17 @@ public:
 //    friend std::ostream& operator<<(std::ostream& os, const Configuration& config);
 
 
+    MTServerType::ServerType getBootType() const;
     int getBootRemain() const;
-    void setBootRemain(int bootRemain);
+    void setBootRemain(int bootRemain, MTServerType::ServerType = MTServerType::ServerType::NONE);
     int getBrownOutLevel() const;
     void setBrownOutLevel(int brownoutLevel);
-    int getActiveServers() const;
-    void setActiveServers(int servers);
-    int getServers() const;
-    bool isColdCache() const;
-    void setColdCache(bool coldCache);
-
-    virtual void printOn(std::ostream& os) const;
-
-protected:
-    virtual bool equals(const pladapt::Configuration& other) const;
+    int getActiveServers(MTServerType::ServerType) const;
+    void setActiveServers(int servers, MTServerType::ServerType);
+    int getServers(MTServerType::ServerType serverType) const;
+    LoadBalancer::TrafficLoad getTraffic(MTServerType::ServerType serverType) const;
+    void setTraffic(MTServerType::ServerType serverType, LoadBalancer::TrafficLoad trafficLoad);
+    int getTotalActiveServers() const;
 };
 
 #endif /* CONFIGURATION_H_ */

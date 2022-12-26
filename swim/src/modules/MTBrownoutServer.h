@@ -50,7 +50,7 @@ class MTBrownoutServer : public MTServer
      * 2500 is the time at which we can visually observe in a real run that the service
      * time converges to the stable value.
      */
-    int cacheRequestCount;
+    double cacheRequestCount;
 
     /**
      * The difference in service time between the start of the run and

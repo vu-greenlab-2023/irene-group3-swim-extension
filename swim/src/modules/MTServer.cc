@@ -53,7 +53,7 @@ void MTServer::handleMessage(cMessage* msg) {
         RunningJobs::iterator first = runningJobs.begin();
         while (first != runningJobs.end() && first->remainingServiceTime < 1e-10) {
             send(first->pJob, "out");
-            runningJobs.erase(first);
+	    runningJobs.erase(first);
             first = runningJobs.begin();
         };
 
@@ -66,8 +66,9 @@ void MTServer::handleMessage(cMessage* msg) {
     }
     else
     {
-        if (!isIdle())
+        if (!isIdle()){
             error("job arrived while already full");
+	}
 
         ScheduledJob job;
         job.pJob = check_and_cast<Job *>(msg);
@@ -76,7 +77,6 @@ void MTServer::handleMessage(cMessage* msg) {
             send(job.pJob, "out");
         } else {
             job.remainingServiceTime = generateJobServiceTime(job.pJob).dbl();
-
             // these two are nops if there was no job running
             updateJobTimes();
             cancelEvent(endExecutionMsg);

@@ -53,27 +53,31 @@ void Model::removeExpectedChange()
         events.erase(--events.end());
     } else {
         std::cout << "removeExpectedChange(): serverCount "
-                << getServers() << " activeServerCount "
-                << activeServers << std::endl;
+                << configuration.getTotalActiveServers() << " activeServerCount "<< std::endl;
     }
 }
 
-int Model::getActiveServerCountIn(double deltaTime)
+int Model::getDimmerLevel() const {
+    return 1 + (numberOfBrownoutLevels - 1) * configuration.getBrownOutLevel();
+}
+
+int Model::getActiveServerCountIn(double deltaTime, MTServerType::ServerType serverType)
 {
     /*
      * We don't keep a past history, but if we need to know what was the active
      * server count an infinitesimal instant before now, we can use a negative delta time
      */
+    ServerInfo* serverInfo = const_cast<ServerInfo*>(getServerInfoObj(serverType));
     if (deltaTime < 0) {
-        return (timeActiveServerCountLast < simTime().dbl()) ? activeServers : activeServerCountLast;
+        return (timeActiveServerCountLast < simTime().dbl()) ? configuration.getActiveServers(serverType) : serverInfo->activeServerCountLast;
     }
 
-    int servers = activeServers;
+    int servers = configuration.getActiveServers(serverType);
 
     double currentTime = simTime().dbl();
     ModelChangeEvents::iterator it = events.begin();
     while (it != events.end() && it->time <= currentTime + deltaTime) {
-        if (it->change == SERVER_ONLINE) {
+        if (it->change == getOnlineEventCode(serverType)) {
             servers++;
         }
         it++;
@@ -82,10 +86,19 @@ int Model::getActiveServerCountIn(double deltaTime)
     return servers;
 }
 
-void Model::addServer(double bootDelay)
+void Model::setTrafficLoad(LoadBalancer::TrafficLoad serverA,
+              LoadBalancer::TrafficLoad serverB, LoadBalancer::TrafficLoad serverC) {
+    this->configuration.setTraffic(MTServerType::ServerType::A, serverA);
+    this->configuration.setTraffic(MTServerType::ServerType::B, serverB);
+    this->configuration.setTraffic(MTServerType::ServerType::C, serverC);
+}
+
+void Model::addServer(double bootDelay, MTServerType::ServerType serverType)
 {
     ASSERT(!isServerBooting()); // only one add server tactic at a time
-    addExpectedChange(simTime().dbl() + bootDelay, Model::SERVER_ONLINE);
+    addExpectedChange(simTime().dbl() + bootDelay, getOnlineEventCode(serverType));
+    configuration.setBootRemain(ceil(bootDelay / evaluationPeriod), serverType);
+    lastConfigurationUpdate = simTime();
 
 #if LOCDEBUG
     std::cout << simTime().dbl() << ": " << "addServer(" << bootDelay << "): serverCount=" << getServers() << " active=" << activeServers << " expected=" << events.size() << std::endl;
@@ -93,20 +106,24 @@ void Model::addServer(double bootDelay)
 }
 
 
-void Model::serverBecameActive()
+void Model::serverBecameActive(MTServerType::ServerType serverType)
 {
-    activeServerCountLast = activeServers;
+    ServerInfo* serverInfo = const_cast<ServerInfo* >(getServerInfoObj(serverType));
+    serverInfo->activeServerCountLast = configuration.getActiveServers(serverType);
     timeActiveServerCountLast = simTime().dbl();
 
     /* remove expected change...assume it is the first SERVER_ONLINE */
+    Model::ModelChange serverBootupEventCode = getOnlineEventCode(serverType);
     ModelChangeEvents::iterator it = events.begin();
-    while (it != events.end() && it->change != Model::SERVER_ONLINE) {
+    while (it != events.end() && it->change != serverBootupEventCode) {
         it++;
     }
     assert(it != events.end()); // there must be an expected change for this
     events.erase(it);
 
-    activeServers++;
+    configuration.setActiveServers(serverInfo->activeServerCountLast + 1, serverType);
+    configuration.setBootRemain(0);
+    lastConfigurationUpdate = simTime();
 
 #if LOCDEBUG
     std::cout << simTime().dbl() << ": " << "serverBecameActive(): serverCount=" << getServers() << " active=" << activeServers << " expected=" << events.size() << std::endl;
@@ -119,18 +136,42 @@ void Model::serverBecameActive()
 
 }
 
-void Model::removeServer()
+Model::ModelChange Model::getOnlineEventCode(MTServerType::ServerType serverType) const {
+    ModelChange event = INVALID;
+
+    switch (serverType) {
+    case MTServerType::ServerType::A:
+        event = SERVERA_ONLINE;
+        break;
+    case MTServerType::ServerType::B:
+        event = SERVERB_ONLINE;
+        break;
+    case MTServerType::ServerType::C:
+        event = SERVERC_ONLINE;
+        break;
+    case MTServerType::ServerType::NONE:
+        assert(false);
+    }
+
+    return event;
+}
+
+void Model::removeServer(MTServerType::ServerType serverType)
 {
     if (isServerBooting()) {
 
         /* the server we're removing is not active yet */
         removeExpectedChange();
+        configuration.setBootRemain(0);
     } else {
-        activeServerCountLast = activeServers;
+        ServerInfo* serverInfo = const_cast<ServerInfo*>(getServerInfoObj(serverType));
+        serverInfo->activeServerCountLast = configuration.getActiveServers(serverType);
         timeActiveServerCountLast = simTime().dbl();
 
-        activeServers--;
+        configuration.setActiveServers(serverInfo->activeServerCountLast - 1, serverType);
     }
+    lastConfigurationUpdate = simTime();
+    std::cout << "Server removed: " << serverType << std::endl;
 
 #if LOCDEBUG
     std::cout << simTime().dbl() << ": " << "removeServer(): serverCount=" << getServers() << " active=" << activeServers << " expected=" << events.size() << std::endl;
@@ -138,12 +179,12 @@ void Model::removeServer()
 
 }
 
-void Model::setBrownoutFactor(double factor) {
-    brownoutFactor = factor;
+void Model::setBrownoutFactor(int factor) {
+    configuration.setBrownOutLevel(factor);
 }
 
-double Model::getBrownoutFactor() const {
-    return brownoutFactor;
+int Model::getBrownoutFactor() const {
+    return configuration.getBrownOutLevel();
 }
 
 void Model::setDimmerFactor(double factor) {
@@ -165,12 +206,15 @@ int const Model::getServers() const {
 void Model::initialize(int stage) {
     if (stage == 0) {
         // get parameters
-        maxServers = getSimulation()->getSystemModule()->par("maxServers");
+        serverA.maxServers = omnetpp::getSimulation()->getSystemModule()->par("maxServersA");
+        serverB.maxServers = omnetpp::getSimulation()->getSystemModule()->par("maxServersB");
+        serverC.maxServers = omnetpp::getSimulation()->getSystemModule()->par("maxServersC");
+        int maxServers = serverA.maxServers + serverB.maxServers + serverC.maxServers;
         evaluationPeriod = getSimulation()->getSystemModule()->par("evaluationPeriod").doubleValue();
         bootDelay = Utils::getMeanAndVarianceFromParameter(
                                 getSimulation()->getSystemModule()->par("bootDelay"));
 
-        horizon = -1;
+        horizon = max(5.0,ceil(bootDelay / evaluationPeriod) * (maxServers - 1) + 1);
         if (hasPar(HORIZON_PAR)) {
             horizon = par("horizon");
         }
@@ -184,12 +228,39 @@ void Model::initialize(int stage) {
     } else {
         // start servers
         ExecutionManagerModBase* pExecMgr = check_and_cast<ExecutionManagerModBase*> (getParentModule()->getSubmodule("executionManager"));
-        int initialServers = getSimulation()->getSystemModule()->par("initialServers");
+        int initialServers = omnetpp::getSimulation()->getSystemModule()->par("initialServersA");
         while (initialServers > 0) {
-            pExecMgr->addServerLatencyOptional(true);
+            pExecMgr->addServerLatencyOptional(MTServerType::ServerType::A, true);
+            initialServers--;
+        }
+        initialServers = omnetpp::getSimulation()->getSystemModule()->par( "initialServersB");
+        while (initialServers > 0) {
+            pExecMgr->addServerLatencyOptional(MTServerType::ServerType::B, true);
+            initialServers--;
+        }
+        initialServers = omnetpp::getSimulation()->getSystemModule()->par("initialServersC");
+        while (initialServers > 0) {
+            pExecMgr->addServerLatencyOptional(MTServerType::ServerType::C, true);
             initialServers--;
         }
     }
+}
+
+bool Model::isServerBooting(MTServerType::ServerType serverType) const {
+    bool isBooting = false;
+
+    if (!events.empty()) {
+        ModelChangeEvents::const_iterator eventIt = events.begin();
+        if (eventIt != events.end()) {
+            ModelChange changeEventCode = getOnlineEventCode(serverType);
+            ASSERT(eventIt->change == changeEventCode);
+            isBooting = true;
+            eventIt++;
+            ASSERT(eventIt == events.end()); // only one tactic should be active
+        }
+    }
+
+    return isBooting;
 }
 
 bool Model::isServerBooting() const {
@@ -200,7 +271,10 @@ bool Model::isServerBooting() const {
         /* find if a server is booting. Assume only one can be booting */
         ModelChangeEvents::const_iterator eventIt = events.begin();
         if (eventIt != events.end()) {
-            ASSERT(eventIt->change == SERVER_ONLINE);
+            ModelChange changeEventCodeServerA = getOnlineEventCode(MTServerType::ServerType::A);
+            ModelChange changeEventCodeServerB = getOnlineEventCode(MTServerType::ServerType::B);
+            ModelChange changeEventCodeServerC = getOnlineEventCode(MTServerType::ServerType::C);
+            ASSERT(eventIt->change == changeEventCodeServerA || eventIt->change == changeEventCodeServerB || eventIt->change == changeEventCodeServerC);
             isBooting = true;
             eventIt++;
             ASSERT(eventIt == events.end()); // only one tactic should be active
@@ -213,8 +287,6 @@ bool Model::isServerBooting() const {
 Configuration Model::getConfiguration() {
     Configuration configuration;
 
-    configuration.setBrownOutLevel(brownoutFactorToLevel(brownoutFactor));
-    configuration.setActiveServers(activeServers);
     if (events.empty()) {
         configuration.setBootRemain(0);
     } else {
@@ -246,8 +318,32 @@ void Model::setEnvironment(const Environment& environment) {
     this->environment = environment;
 }
 
-int Model::getMaxServers() const {
-    return maxServers;
+int Model::getMaxServers(MTServerType::ServerType serverType) const {
+    return getServerInfoObj(serverType)->maxServers;
+}
+
+const Model::ServerInfo* Model::getServerInfoObj(MTServerType::ServerType serverType) const {
+    const ServerInfo* serverInfo = NULL;
+
+    switch (serverType) {
+    case MTServerType::ServerType::A:
+        serverInfo = &serverA;
+        break;
+    case MTServerType::ServerType::B:
+        serverInfo = &serverB;
+        break;
+    case MTServerType::ServerType::C:
+        serverInfo = &serverC;
+        break;
+    case MTServerType::ServerType::NONE:
+        assert(false);
+    }
+
+    return serverInfo;
+}
+
+double Model::getAvgResponseTime() const {
+    return observations.avgResponseTime;
 }
 
 double Model::getEvaluationPeriod() const {
@@ -280,13 +376,15 @@ int Model::getNumberOfDimmerLevels() const {
 }
 
 
-double Model::getLowFidelityServiceTime() const {
-    return lowFidelityServiceTime;
+double Model::getLowFidelityServiceTime(MTServerType::ServerType serverType) const {
+    ServerInfo serverInfo;
+    return getServerInfoObj(serverType)->lowFidelityServiceTime;
 }
 
-void Model::setLowFidelityServiceTime(double lowFidelityServiceTimeMean, double lowFidelityServiceTimeVariance) {
-    this->lowFidelityServiceTime = lowFidelityServiceTimeMean;
-    this->lowFidelityServiceTimeVariance = lowFidelityServiceTimeVariance;
+void Model::setLowFidelityServiceTime(double lowFidelityServiceTimeMean, double lowFidelityServiceTimeVariance, MTServerType::ServerType serverType) {
+    ServerInfo* serverInfo = const_cast<ServerInfo*>(getServerInfoObj(serverType));
+    serverInfo->lowFidelityServiceTime = lowFidelityServiceTimeMean;
+    serverInfo->lowFidelityServiceTimeVariance = lowFidelityServiceTimeVariance;
 }
 
 int Model::getServerThreads() const {
@@ -297,21 +395,22 @@ void Model::setServerThreads(int serverThreads) {
     this->serverThreads = serverThreads;
 }
 
-double Model::getServiceTime() const {
-    return serviceTime;
+double Model::getServiceTime(MTServerType::ServerType serverType) const {
+    return getServerInfoObj(serverType)->serviceTime;
 }
 
-void Model::setServiceTime(double serviceTimeMean, double serviceTimeVariance) {
-    this->serviceTime = serviceTimeMean;
-    this->serviceTimeVariance = serviceTimeVariance;
+void Model::setServiceTime(double serviceTimeMean, double serviceTimeVariance, MTServerType::ServerType serverType) {
+    ServerInfo* serverInfo = const_cast<ServerInfo*>(getServerInfoObj(serverType));
+    serverInfo->serviceTime = serviceTimeMean;
+    serverInfo->serviceTimeVariance = serviceTimeVariance;
 }
 
-double Model::getLowFidelityServiceTimeVariance() const {
-    return lowFidelityServiceTimeVariance;
+double Model::getLowFidelityServiceTimeVariance(MTServerType::ServerType serverType) const {
+    return getServerInfoObj(serverType)->lowFidelityServiceTimeVariance;
 }
 
-double Model::getServiceTimeVariance() const {
-    return serviceTimeVariance;
+double Model::getServiceTimeVariance(MTServerType::ServerType serverType) const {
+    return getServerInfoObj(serverType)->serviceTimeVariance;
 }
 
 double Model::brownoutLevelToFactor(int brownoutLevel) const {
@@ -332,6 +431,24 @@ int Model::brownoutFactorToLevel(double brownoutFactor) const {
     return 1 + round((brownoutFactor - dimmerMargin) * (getNumberOfBrownoutLevels() - 1) / (1.0 - 2 * dimmerMargin));
 }
 
+void Model::setJobServerInfo(string jobName, MTServerType::ServerType serverType) {
+    JobServeInfo::iterator itr = jobServeInfo.find(jobName);
+
+    assert(itr == jobServeInfo.end());
+    jobServeInfo[jobName] = serverType;
+    //cout << "JobName = " << jobName << endl;
+}
+
+    MTServerType::ServerType Model::getJobServerInfo(string jobName) {
+    JobServeInfo::iterator itr = jobServeInfo.find(jobName);
+    MTServerType::ServerType serverType = MTServerType::ServerType::NONE;
+
+    if (itr != jobServeInfo.end()) {
+        serverType = itr->second;
+    }
+
+    return serverType;
+}
 
 bool Model::isDimmerMarginLower() const {
     return lowerDimmerMargin;

@@ -19,8 +19,9 @@
 #include <set>
 #include "BootComplete_m.h"
 #include <model/Model.h>
+#include <string>
 #include "ExecutionManagerModBase.h"
-
+using namespace std;
 class ExecutionManagerMod : public ExecutionManagerModBase, omnetpp::cListener {
     omnetpp::simsignal_t serverBusySignalId;
     int serverBeingRemovedModuleId;
@@ -43,21 +44,24 @@ class ExecutionManagerMod : public ExecutionManagerModBase, omnetpp::cListener {
     /**
      * @return BootComplete* to be handled later by doAddServerBootComplete()
      */
-    virtual BootComplete* doAddServer(bool instantaneous = false);
+    virtual BootComplete* doAddServer(MTServerType::ServerType serverType, bool instantaneous = false);
     virtual void doAddServerBootComplete(BootComplete* bootComplete);
 
     /**
      * @return BootComplete* identical in content (not the pointer itself) to
      *   what doAddServer() would have return for this server
      */
-    virtual BootComplete* doRemoveServer();
+    virtual BootComplete* doRemoveServer(MTServerType::ServerType serverType);
+    virtual void doSetBrownout(MTServerType::ServerType serverType, double factor);
     virtual void doSetBrownout(double factor);
+    virtual string getModuleStr(MTServerType::ServerType serverType) const;
 
   public:
     ExecutionManagerMod();
     virtual ~ExecutionManagerMod();
 
     virtual void receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, bool value, cObject *details) override;
+    virtual string getServerString(MTServerType::ServerType serverType, bool internal=false) const;
 };
 
 #endif /* EXECUTIONMANAGERMOD_H_ */
