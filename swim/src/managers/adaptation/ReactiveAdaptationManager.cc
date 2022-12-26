@@ -39,7 +39,6 @@ Tactic* ReactiveAdaptationManager::evaluate() {
     double spareUtilization =  pModel->getConfiguration().getActiveServers() - pModel->getObservations().utilization;
     bool isServerBooting = pModel->getServers() > pModel->getActiveServers();
     double responseTime = pModel->getObservations().avgResponseTime;
-<<<<<<< HEAD
     int weightThreshold = 3;
     int activeConnectionsThreshold = 4;
 
@@ -53,17 +52,6 @@ Tactic* ReactiveAdaptationManager::evaluate() {
         } else if (dimmer > 0.0) {
             dimmer = max(0.0, dimmer - dimmerStep);
             pMacroTactic->addTactic(new SetDimmerTactic(dimmer));
-
-=======
-
-    if (responseTime > RT_THRESHOLD) {
-        if (!isServerBooting
-                && pModel->getServers() < pModel->getMaxServers()) {
-            pMacroTactic->addTactic(new AddServerTactic);
-        } else if (dimmer > 0.0) {
-            dimmer = max(0.0, dimmer - dimmerStep);
-            pMacroTactic->addTactic(new SetDimmerTactic(dimmer));
->>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
         }
     } else if (responseTime < RT_THRESHOLD) { // can we increase dimmer or remove servers?
 
