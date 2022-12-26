@@ -100,10 +100,19 @@ BootComplete* ExecutionManagerMod::doAddServer(MTServerType::ServerType serverTy
         templateName << SERVER_MODULE_NAME;
         templateName << 1;
         cModule* pTemplateSubmodule = getParentModule()->getSubmodule(templateName.str().c_str())->getSubmodule(INTERNAL_SERVER_MODULE_NAME);
+<<<<<<< HEAD
+        for (int i = 0; i < pTemplateSubmodule->getNumParams(); i++) {
+            pNewSubmodule->par(i) = pTemplateSubmodule->par(i);
+        }
+	int rdWeight = pModel->getServerWeight() + (rand() % 4);
+	int rdConnection = 1 + (rand() % pModel->getActiveConnections());
+
+=======
 
         for (int i = 0; i < pTemplateSubmodule->getNumParams(); i++) {
             pNewSubmodule->par(i) = pTemplateSubmodule->par(i);
         }
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
     } else {
         // if it's the first server, we need to set the parameters common to all servers in the model
         pModel->setServerThreads(pNewSubmodule->par("threads"));
@@ -113,6 +122,13 @@ BootComplete* ExecutionManagerMod::doAddServer(MTServerType::ServerType serverTy
         mean = Utils::getMeanAndVarianceFromParameter(pNewSubmodule->par("lowFidelityServiceTime"), &variance);
         pModel->setLowFidelityServiceTime(mean, variance, serverType);
         pModel->setBrownoutFactor(pNewSubmodule->par("brownoutFactor"));
+<<<<<<< HEAD
+	int rdWeight = 1 + (rand() % 4);
+	int rdConnection = 1 + (rand() % 9);
+	pModel->setServerWeight(rdWeight);
+	pModel->setActiveConnections(rdConnection);
+=======
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
     }
 
     // create activation message

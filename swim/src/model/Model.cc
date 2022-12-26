@@ -468,3 +468,22 @@ int Model::dimmerFactorToLevel(double dimmerFactor) const {
 double Model::getDimmerMargin() const {
     return dimmerMargin;
 }
+<<<<<<< HEAD
+
+int Model::getServerWeight() const {
+    return weight;
+}
+
+void Model::setServerWeight(int weight){
+    this->weight=weight;
+}
+
+int Model::getActiveConnections() const{
+   return activeConnections;
+}
+
+void Model::setActiveConnections(int activeConnections){
+  this->activeConnections = activeConnections;
+}
+=======
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db

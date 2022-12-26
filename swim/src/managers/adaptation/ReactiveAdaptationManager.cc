@@ -39,11 +39,21 @@ Tactic* ReactiveAdaptationManager::evaluate() {
     double spareUtilization =  pModel->getConfiguration().getActiveServers(pModel->getConfiguration().getBootType()) - pModel->getObservations().utilization;
     bool isServerBooting = pModel->getServers() - pModel->getActiveServers();
     double responseTime = pModel->getObservations().avgResponseTime;
+    int weightThreshold = 3;
+    int activeConnectionsThreshold = 4;
 
     if (responseTime > RT_THRESHOLD) {
         if (!isServerBooting
+<<<<<<< HEAD
                 && pModel->getServers() < pModel->getMaxServers(pModel->getConfiguration().getBootType())) {
             pMacroTactic->addTactic(new AddServerTactic);
+=======
+                && pModel->getServers() < pModel->getMaxServers()
+		&& pModel->getActiveConnections() > activeConnectionsThreshold
+		&& pModel->getServerWeight() < weightThreshold ) {
+	   cout<<pModel->getActiveConnections()<<endl; 
+	   pMacroTactic->addTactic(new AddServerTactic);
+>>>>>>> 17da0a91169243a8313138a4e1d02727449219a5
         } else if (dimmer > 0.0) {
             dimmer = max(0.0, dimmer - dimmerStep);
             pMacroTactic->addTactic(new SetDimmerTactic(dimmer));

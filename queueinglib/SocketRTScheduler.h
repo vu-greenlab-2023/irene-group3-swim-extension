@@ -19,7 +19,10 @@
 #define __CSOCKETRTSCHEDULER_H__
 
 #include <omnetpp/platdep/sockets.h>
+<<<<<<< HEAD
+=======
 #include <omnetpp/platdep/timeutil.h>
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
 #include <omnetpp.h>
 
 using namespace omnetpp;
@@ -28,7 +31,11 @@ using namespace omnetpp;
  * Real-time scheduler with socket-based external communication.
  *
  * \code
+<<<<<<< HEAD
+ * class MyInterfaceModule : public cSimpleModule
+=======
  * class MyInterfaceModule : public omnetpp::cSimpleModule
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
  * {
  *    cSocketRTScheduler *rtScheduler;
  *    cMessage *extEvent;
@@ -65,13 +72,21 @@ class cSocketRTScheduler : public cScheduler
     int *numBytesPtr;
 
     // state
+<<<<<<< HEAD
+    int64_t baseTime; // in microseconds, as returned by opp_get_monotonic_clock_usecs()
+=======
     timeval baseTime;
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
     SOCKET listenerSocket;
     SOCKET connSocket;
 
     virtual void setupListener();
     virtual bool receiveWithTimeout(long usec);
+<<<<<<< HEAD
+    virtual int receiveUntil(int64_t targetTime);
+=======
     virtual int receiveUntil(const timeval& targetTime);
+>>>>>>> fc568acc6e702a7b574ac602ba7dad7a5b6cf2db
 
   public:
     /**
